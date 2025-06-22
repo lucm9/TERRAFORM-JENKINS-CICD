@@ -3,7 +3,7 @@ pipeline {
  
     tools {
         jdk 'jdk17'
-        terraform 'terraform'
+        terraform 'terraform' 
     }
  
     environment {
