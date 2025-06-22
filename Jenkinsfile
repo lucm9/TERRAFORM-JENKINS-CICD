@@ -5,7 +5,7 @@ pipeline {
         jdk 'jdk17'
         terraform 'terraform'
     }
-
+ 
     environment {
         SONAR_SCANNER_HOME = tool name: 'sonar-scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
     }
