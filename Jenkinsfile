@@ -1,13 +1,13 @@
 pipeline {
     agent any
- 
+
     tools {
         jdk 'jdk17'
         terraform 'terraform'
     }
 
     environment {
-        SONAR_SCANNER = tool 'sonar-scanner'
+        SONAR_SCANNER_HOME = tool name: 'sonar-scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
     }
 
     stages {
@@ -33,9 +33,9 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonar-server') {
                     sh '''
-                        ${SONAR_SCANNER}/bin/sonar-scanner \
-                        -Dsonar.projectName=Terraform \
+                        ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
                         -Dsonar.projectKey=Terraform \
+                        -Dsonar.projectName=Terraform \
                         -Dsonar.sources=.
                     '''
                 }
@@ -76,10 +76,7 @@ pipeline {
 
         stage('Terraform Apply') {
             steps {
-                script {
-                    def action = "apply"
-                    sh "terraform ${action} --auto-approve"
-                }
+                sh 'terraform apply --auto-approve'
             }
         }
     }
