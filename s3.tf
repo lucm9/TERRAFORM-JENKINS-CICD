@@ -3,14 +3,16 @@ resource "aws_s3_bucket" "mybucket" {
   bucket = var.bucketname
 }
 
-# S3 bucket encryption
+# S3 bucket encryption with customer managed key
 resource "aws_s3_bucket_server_side_encryption_configuration" "mybucket_encryption" {
   bucket = aws_s3_bucket.mybucket.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      kms_master_key_id = aws_kms_key.s3_key.arn
+      sse_algorithm     = "aws:kms"
     }
+    bucket_key_enabled = true
   }
 }
 
@@ -30,11 +32,13 @@ resource "aws_s3_bucket_ownership_controls" "example" {
   }
 }
 
-# Public access block - more restrictive but allow website hosting
+# Public access block - configured for static website hosting
+# tfsec:ignore:aws-s3-block-public-policy
+# tfsec:ignore:aws-s3-no-public-buckets
 resource "aws_s3_bucket_public_access_block" "example" {
   bucket = aws_s3_bucket.mybucket.id
   
-  # NOSONAR - Public access required for static website hosting
+  # Public access required for static website hosting
   # Website content is intentionally public and secured via bucket policy
   # Allow public policies but block ACLs for better security
   block_public_acls       = true   # Block public ACLs
@@ -49,7 +53,7 @@ resource "aws_s3_bucket_versioning" "this" {
 
   versioning_configuration {
     status = "Enabled"
-    # NOSONAR - MFA-Delete disabled due to operational complexity
+    # MFA-Delete disabled due to operational complexity
     # Equivalent protection provided via bucket policy below
   }
 }

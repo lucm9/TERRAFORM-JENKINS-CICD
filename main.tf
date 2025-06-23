@@ -1,3 +1,5 @@
+# main.tf - EC2 Configuration
+
 # Key pair data source
 data "aws_key_pair" "existing" {
   key_name = "Leeno-pc"  
@@ -43,8 +45,9 @@ resource "aws_security_group" "ec2_security_group" {
   }
 
   # HTTPS access from anywhere (for web traffic)
+  # tfsec:ignore:aws-ec2-no-public-ingress-sgr
   ingress {
-    description = "https web traffic"
+    description = "https web traffic - required for public website"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -52,17 +55,19 @@ resource "aws_security_group" "ec2_security_group" {
   }
 
   # HTTP access from anywhere (for web traffic)
+  # tfsec:ignore:aws-ec2-no-public-ingress-sgr
   ingress {
-    description = "http web traffic"
+    description = "http web traffic - required for public website"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Restricted egress for security
+  # Outbound internet access for updates and dependencies
+  # tfsec:ignore:aws-ec2-no-public-egress-sgr
   egress {
-    description = "outbound internet access"
+    description = "outbound internet access - required for system updates"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -73,3 +78,22 @@ resource "aws_security_group" "ec2_security_group" {
     Name = "Aj_sg"
   }
 }
+
+# s3.tf - S3 Configuration
+
+# Create KMS key for S3 encryption
+resource "aws_kms_key" "s3_key" {
+  description             = "KMS key for S3 bucket encryption"
+  deletion_window_in_days = 7
+
+  tags = {
+    Name = "s3-encryption-key"
+  }
+}
+
+# KMS key alias
+resource "aws_kms_alias" "s3_key_alias" {
+  name          = "alias/s3-bucket-key"
+  target_key_id = aws_kms_key.s3_key.key_id
+}
+
