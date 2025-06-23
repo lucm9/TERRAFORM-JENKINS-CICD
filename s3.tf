@@ -40,6 +40,23 @@ data "aws_iam_policy_document" "deny_delete_without_mfa" {
   }
 }
 
+# Upload all files in current directory
+resource "aws_s3_object" "website_files" {
+  for_each = fileset(".", "**")
+  
+  bucket       = aws_s3_bucket.my_bucket.id
+  key          = each.value
+  source       = each.value
+  content_type = lookup({
+    "html" = "text/html"
+    "css"  = "text/css"
+    "js"   = "application/javascript"
+    "tf"   = "text/plain"
+    "sh"   = "text/plain"
+  }, split(".", each.value)[length(split(".", each.value)) - 1], "application/octet-stream")
+  etag = filemd5(each.value)
+}
+
 resource "aws_s3_bucket_policy" "require_mfa_delete" {
   bucket = aws_s3_bucket.my_bucket.id
   policy = data.aws_iam_policy_document.deny_delete_without_mfa.json

@@ -58,6 +58,12 @@ pipeline {
             }
         }
 
+        stage('Trivy terraform scan'){
+             steps{
+                sh 'tfsec . --no-color'
+            }
+        }
+
         stage('Make Userdata Executable') {
             steps {
                 sh 'chmod +x website.sh'
