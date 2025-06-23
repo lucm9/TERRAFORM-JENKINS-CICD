@@ -3,6 +3,25 @@ resource "aws_s3_bucket" "mybucket" {
   bucket = var.bucketname
 }
 
+# S3 bucket encryption
+resource "aws_s3_bucket_server_side_encryption_configuration" "mybucket_encryption" {
+  bucket = aws_s3_bucket.mybucket.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# S3 bucket logging
+resource "aws_s3_bucket_logging" "mybucket_logging" {
+  bucket = aws_s3_bucket.mybucket.id
+
+  target_bucket = aws_s3_bucket.mybucket.id
+  target_prefix = "access-logs/"
+}
+
 # Bucket ownership controls
 resource "aws_s3_bucket_ownership_controls" "example" {
   bucket = aws_s3_bucket.mybucket.id
@@ -11,7 +30,7 @@ resource "aws_s3_bucket_ownership_controls" "example" {
   }
 }
 
-# Public access block - more restrictive
+# Public access block - more restrictive but allow website hosting
 resource "aws_s3_bucket_public_access_block" "example" {
   bucket = aws_s3_bucket.mybucket.id
   
@@ -22,39 +41,6 @@ resource "aws_s3_bucket_public_access_block" "example" {
   block_public_policy     = false  # Allow bucket policy for website
   ignore_public_acls      = true   # Ignore existing public ACLs
   restrict_public_buckets = false  # Allow public bucket policy
-}
-
-# Upload objects without deprecated ACL parameter
-resource "aws_s3_object" "index" {
-  bucket       = aws_s3_bucket.mybucket.id
-  key          = "index.html"
-  source       = "index.html"
-  content_type = "text/html"
-  etag         = filemd5("index.html")
-}
-
-resource "aws_s3_object" "error" {
-  bucket       = aws_s3_bucket.mybucket.id
-  key          = "error.html"
-  source       = "error.html"
-  content_type = "text/html"
-  etag         = filemd5("error.html")
-}
-
-resource "aws_s3_object" "style" {
-  bucket       = aws_s3_bucket.mybucket.id
-  key          = "style.css"
-  source       = "style.css"
-  content_type = "text/css"
-  etag         = filemd5("style.css")
-}
-
-resource "aws_s3_object" "script" {
-  bucket       = aws_s3_bucket.mybucket.id
-  key          = "script.js"
-  source       = "script.js"
-  content_type = "application/javascript"
-  etag         = filemd5("script.js")
 }
 
 # S3 bucket versioning configuration
@@ -104,7 +90,43 @@ resource "aws_s3_bucket_policy" "combined_policy" {
     ]
   })
 
-  depends_on = [aws_s3_bucket_public_access_block.example]
+  depends_on = [
+    aws_s3_bucket_public_access_block.example,
+    aws_s3_bucket_server_side_encryption_configuration.mybucket_encryption
+  ]
+}
+
+# Upload objects
+resource "aws_s3_object" "index" {
+  bucket       = aws_s3_bucket.mybucket.id
+  key          = "index.html"
+  source       = "index.html"
+  content_type = "text/html"
+  etag         = filemd5("index.html")
+}
+
+resource "aws_s3_object" "error" {
+  bucket       = aws_s3_bucket.mybucket.id
+  key          = "error.html"
+  source       = "error.html"
+  content_type = "text/html"
+  etag         = filemd5("error.html")
+}
+
+resource "aws_s3_object" "style" {
+  bucket       = aws_s3_bucket.mybucket.id
+  key          = "style.css"
+  source       = "style.css"
+  content_type = "text/css"
+  etag         = filemd5("style.css")
+}
+
+resource "aws_s3_object" "script" {
+  bucket       = aws_s3_bucket.mybucket.id
+  key          = "script.js"
+  source       = "script.js"
+  content_type = "application/javascript"
+  etag         = filemd5("script.js")
 }
 
 # Website configuration
