@@ -62,6 +62,12 @@ pipeline {
             }
         }
 
+        stage('Executable Permission to Userdata') {
+            steps {
+                sh 'chmod 777 website.sh'
+            }
+        }
+
         stage('Terraform Init') {
             steps {
                 sh 'terraform init'
