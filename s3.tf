@@ -1,9 +1,12 @@
 resource "aws_s3_bucket" "my_bucket" {
   bucket = var.bucketname
+  acl    = var.acl
+}
 
-  versioning {
-    enabled = true
+resource "aws_s3_bucket_versioning" "this" {
+  bucket = aws_s3_bucket.my_bucket.id
+
+  versioning_configuration {
+    status = "Enabled"
   }
-
-  acl = var.acl
 }

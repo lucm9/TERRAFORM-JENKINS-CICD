@@ -1,14 +1,18 @@
+data "aws_key_pair" "existing" {
+  key_name = "Leeno-pc.pem"  
+}
+
+
 resource "aws_instance" "Ajay" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
-  key_name               = var.key_name
+  key_name               = data.aws_key_pair.existing.key_name
   vpc_security_group_ids = [aws_security_group.ec2_security_group.id]
   user_data              = base64encode(file("website.sh"))
   tags = {
     Name = "Aj-EC2"
   }
 }
-
 resource "aws_security_group" "ec2_security_group" {
   name        = "ec2 security group"
   description = "allow access on ports 80 and 22 and 443"
