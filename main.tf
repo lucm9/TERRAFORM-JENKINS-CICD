@@ -19,7 +19,6 @@ resource "aws_security_group" "ec2_security_group" {
     to_port          = 22
     protocol         = "tcp"
     cidr_blocks      = ["97.116.4.181/32"]
-    ipv6_cidr_blocks = ["::/0"]
   }
 
   ingress {
