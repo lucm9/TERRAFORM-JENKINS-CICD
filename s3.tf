@@ -24,26 +24,6 @@ resource "aws_s3_bucket_public_access_block" "example" {
   restrict_public_buckets = false  # Allow public bucket policy
 }
 
-# Bucket policy for website access (instead of ACLs)
-resource "aws_s3_bucket_policy" "website_policy" {
-  bucket = aws_s3_bucket.mybucket.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "PublicReadGetObject"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = "s3:GetObject"
-        Resource  = "${aws_s3_bucket.mybucket.arn}/*"
-      }
-    ]
-  })
-
-  depends_on = [aws_s3_bucket_public_access_block.example]
-}
-
 # Upload objects without deprecated ACL parameter
 resource "aws_s3_object" "index" {
   bucket       = aws_s3_bucket.mybucket.id
@@ -88,40 +68,10 @@ resource "aws_s3_bucket_versioning" "this" {
   }
 }
 
-# MFA protection via bucket policy (equivalent to MFA-Delete)
-data "aws_iam_policy_document" "deny_delete_without_mfa" {
-  statement {
-    sid    = "DenyDeleteWithoutMFA"
-    effect = "Deny"
-
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-
-    actions = [
-      "s3:DeleteObject",
-      "s3:DeleteObjectVersion",
-      "s3:DeleteObjectTagging",
-      "s3:DeleteObjectVersionTagging"
-    ]
-
-    resources = [
-      "${aws_s3_bucket.mybucket.arn}/*"
-    ]
-
-    condition {
-      test     = "Bool"
-      variable = "aws:MultiFactorAuthPresent"
-      values   = ["false"]
-    }
-  }
-}
-
-resource "aws_s3_bucket_policy" "require_mfa_delete" {
+# Combined bucket policy for website access AND MFA delete protection
+resource "aws_s3_bucket_policy" "combined_policy" {
   bucket = aws_s3_bucket.mybucket.id
   
-  # Combine website policy and MFA policy
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -169,7 +119,7 @@ resource "aws_s3_bucket_website_configuration" "website" {
     key = "error.html"
   }
 
-  depends_on = [aws_s3_bucket_policy.require_mfa_delete]
+  depends_on = [aws_s3_bucket_policy.combined_policy]
 }
 
 # Get current AWS region
@@ -185,4 +135,4 @@ output "website_url" {
 output "bucket_name" {
   value       = aws_s3_bucket.mybucket.id
   description = "Name of the S3 bucket"
-}s3
+}
