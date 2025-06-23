@@ -1,11 +1,11 @@
 pipeline {
     agent any
- 
+
     tools {
         jdk 'jdk17'
-        terraform 'terraform' 
+        terraform 'terraform'
     }
- 
+
     environment {
         SONAR_SCANNER_HOME = tool name: 'sonar-scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
     }
@@ -29,7 +29,7 @@ pipeline {
             }
         }
 
-        stage("SonarQube Analysis") {
+        stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonar-server') {
                     sh '''
@@ -42,10 +42,12 @@ pipeline {
             }
         }
 
-        stage("Quality Gate") {
+        stage('Quality Gate') {
             steps {
                 script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token'
+                    timeout(time: 5, unit: 'MINUTES') {
+                        waitForQualityGate abortPipeline: true, credentialsId: 'Sonar-token'
+                    }
                 }
             }
         }
@@ -56,11 +58,12 @@ pipeline {
             }
         }
 
-        stage('Executable Permission to Userdata') {
+        stage('Make Userdata Executable') {
             steps {
                 sh 'chmod +x website.sh'
             }
         }
+
         stage('Terraform Init') {
             steps {
                 sh 'terraform init'
