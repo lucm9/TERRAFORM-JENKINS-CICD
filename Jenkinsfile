@@ -61,7 +61,6 @@ pipeline {
                 sh 'chmod +x website.sh'
             }
         }
-
         stage('Terraform Init') {
             steps {
                 sh 'terraform init'
