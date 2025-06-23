@@ -1,5 +1,5 @@
 data "aws_key_pair" "existing" {
-  key_name = "Leeno-pc.pem"  
+  key_name = "Leeno-pc"  
 }
 
 
