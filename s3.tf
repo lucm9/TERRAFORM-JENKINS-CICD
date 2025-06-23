@@ -1,63 +1,63 @@
-resource "aws_s3_bucket" "my_bucket" {
+#create s3 bucket
+resource "aws_s3_bucket" "mybucket" {
   bucket = var.bucketname
-  acl    = var.acl
 }
-
-resource "aws_s3_bucket_versioning" "this" {
-  bucket = aws_s3_bucket.my_bucket.id
-
-  versioning_configuration {
-    status     = "Enabled"
-    mfa_delete = "Disabled"  # Explicitly documented
+resource "aws_s3_bucket_ownership_controls" "example" {
+  bucket = aws_s3_bucket.mybucket.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
   }
 }
-
-# Compensating control: MFA protection via bucket policy
-data "aws_iam_policy_document" "deny_delete_without_mfa" {
-  statement {
-    sid    = "DenyDeleteWithoutMFA"
-    effect = "Deny"
-
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-
-    actions = [
-      "s3:DeleteObject",
-      "s3:DeleteObjectVersion"
-    ]
-
-    resources = [
-      "${aws_s3_bucket.my_bucket.arn}/*"
-    ]
-
-    condition {
-      test     = "Bool"
-      variable = "aws:MultiFactorAuthPresent"
-      values   = ["false"]
-    }
+resource "aws_s3_bucket_public_access_block" "example" {
+  bucket = aws_s3_bucket.mybucket.id
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+resource "aws_s3_bucket_acl" "example" {
+  depends_on = [
+    aws_s3_bucket_ownership_controls.example,
+    aws_s3_bucket_public_access_block.example,
+  ]
+  bucket = aws_s3_bucket.mybucket.id
+  acl    = "public-read"
+}
+resource "aws_s3_object" "index" {
+  bucket = aws_s3_bucket.mybucket.id
+  key = "index.html"
+  source = "index.html"
+  acl = "public-read"
+  content_type = "text/html"
+}
+resource "aws_s3_object" "error" {
+  bucket = aws_s3_bucket.mybucket.id
+  key = "error.html"
+  source = "error.html"
+  acl = "public-read"
+  content_type = "text/html"
+}
+resource "aws_s3_object" "style" {
+  bucket = aws_s3_bucket.mybucket.id
+  key = "style.css"
+  source = "style.css"
+  acl = "public-read"
+  content_type = "text/css"
+}
+resource "aws_s3_object" "script" {
+  bucket = aws_s3_bucket.mybucket.id
+  key = "script.js"
+  source = "script.js"
+  acl = "public-read"
+  content_type = "text/javascript"
+}
+resource "aws_s3_bucket_website_configuration" "website" {
+  bucket = aws_s3_bucket.mybucket.id
+  index_document {
+    suffix = "index.html"
   }
-}
-
-# Upload all files in current directory
-resource "aws_s3_object" "website_files" {
-  for_each = fileset(".", "**")
-  
-  bucket       = aws_s3_bucket.my_bucket.id
-  key          = each.value
-  source       = each.value
-  content_type = lookup({
-    "html" = "text/html"
-    "css"  = "text/css"
-    "js"   = "application/javascript"
-    "tf"   = "text/plain"
-    "sh"   = "text/plain"
-  }, split(".", each.value)[length(split(".", each.value)) - 1], "application/octet-stream")
-  etag = filemd5(each.value)
-}
-
-resource "aws_s3_bucket_policy" "require_mfa_delete" {
-  bucket = aws_s3_bucket.my_bucket.id
-  policy = data.aws_iam_policy_document.deny_delete_without_mfa.json
+  error_document {
+    key = "error.html"
+  }
+  depends_on = [ aws_s3_bucket_acl.example.id ]
 }
